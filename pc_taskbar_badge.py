@@ -4,7 +4,10 @@ pc_taskbar_badge.py
 Custom text display widget for windows taskbars
 """
 
-import sys, os
+import sys
+import os
+import yaml
+from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPainter, QFont, QColor, QGuiApplication
 from PySide6.QtWidgets import QApplication, QWidget
@@ -108,8 +111,23 @@ class PCBadge(QWidget):
 
 
 if __name__ == "__main__":
+    with open(Path(__file__).parent / "config.yml", "r") as f:
+        config = yaml.safe_load(f)
+
+    host = config.get("host", None)
+    if host is None:
+        host = os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "PC"
+    
+    bg_colour = config.get("bg_colour", "#FF8A00")
+    fg_colour = config.get("fg_colour", "#FFFFFF")
+    border_radius = config.get("border_radius", 6)
+    
     app = QApplication(sys.argv)
-    host = os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "PC"
-    w = PCBadge(text=host, bg="#FF8A00", fg="#000000", border_radius=8)
+    w = PCBadge(
+        text=host,
+        bg=bg_colour,
+        fg=fg_colour,
+        border_radius=border_radius
+    )
     w.show()
     sys.exit(app.exec())
