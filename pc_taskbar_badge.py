@@ -132,9 +132,9 @@ if __name__ == "__main__":
     with open(Path(__file__).parent / "config.yml", "r") as f:
         config = yaml.safe_load(f)
 
-    host = config.get("host", None)
-    if host is None:
-        host = os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "PC"
+    text = config.get("text", None)
+    if text is None or not text:
+        text = os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "PC"
     
     bg_colour = config.get("bg_colour", "#FF8A00")
     fg_colour = config.get("fg_colour", "#FFFFFF")
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     w = PCBadge(
-        text=host,
+        text=text,
         bg=bg_colour,
         fg=fg_colour,
         border_radius=border_radius

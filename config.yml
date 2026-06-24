@@ -1,4 +1,4 @@
-host: null
+text: null
 bg_colour: "#FF8A00"
-fg_colour: "#FFFFFF"
+fg_colour: "#000000"
 border_radius: 4
