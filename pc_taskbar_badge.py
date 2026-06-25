@@ -30,13 +30,13 @@ class PCBadge(QWidget):
         taskbar_height = window.height() - available.height()
         self.resize(150, 40 * (taskbar_height / 48))
 
-        self.placeWidgetInAvailableArea(available)
+        self.place_widget_in_available_area(available)
         self._drag_off = 0
 
         # Keep the badge from falling behind taskbar/other always-on-top windows
         self._top_timer = QTimer(self)
         self._top_timer.setInterval(200)
-        self._top_timer.timeout.connect(self.ensureOnTop)
+        self._top_timer.timeout.connect(self.ensure_on_top)
         self._top_timer.start()
 
         # Prevent the badge from stealing focus
@@ -49,7 +49,7 @@ class PCBadge(QWidget):
         close_action.triggered.connect(QApplication.quit)
 
 
-    def placeWidgetInAvailableArea(self, available):
+    def place_widget_in_available_area(self, available):
         """ 
         Force place the badge on the taskbar
         Place the widget on the bottom left if user has taskbar centered
@@ -67,6 +67,43 @@ class PCBadge(QWidget):
         self.badge_pos = (x, y)
 
 
+    def ensure_on_top(self):
+        """
+        Method to be called on a timer to bump the application
+        to the top, so that it is painted above the taskbar
+        """
+        # Qt-level bump
+        if self.isVisible():
+            self.raise_()
+
+        self.set_widget_top_most(self)
+
+        if self.close_context.isVisible():
+            self.set_widget_top_most(self.close_context)
+
+
+    def set_widget_top_most(self, widget):
+        # Win32-level bump (more reliable vs taskbar)
+        if sys.platform == "win32" and widget.isVisible():
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            HWND_TOPMOST = -1
+            SWP_NOMOVE = 0x0002
+            SWP_NOSIZE = 0x0001
+            SWP_NOACTIVATE = 0x0010
+            SWP_SHOWWINDOW = 0x0040
+
+            user32.SetWindowPos(
+                wintypes.HWND(int(widget.winId())),
+                wintypes.HWND(HWND_TOPMOST),
+                0, 0, 0, 0, # x, y, x_width, y_width
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+            )
+
+
+    ### Qt event handling ###
     def paintEvent(self, _):
         """ Draw the rect and text of the widget """
         p = QPainter(self)
@@ -96,7 +133,7 @@ class PCBadge(QWidget):
 
         elif e.button() == Qt.RightButton:
             self.close_context.popup(QPoint(*self.badge_pos))
-            QTimer.singleShot(0, lambda: self.setWidgetTopMost(self.close_context))
+            QTimer.singleShot(0, lambda: self.set_widget_top_most(self.close_context))
 
         super().mousePressEvent(e)
 
@@ -108,38 +145,6 @@ class PCBadge(QWidget):
 
     def mouseReleaseEvent(self, e):
         self._drag_off = None
-
-
-    def ensureOnTop(self):
-        # Qt-level bump
-        if self.isVisible():
-            self.raise_()
-
-        self.setWidgetTopMost(self)
-
-        if self.close_context.isVisible():
-            self.setWidgetTopMost(self.close_context)
-
-
-    def setWidgetTopMost(self, widget):
-        # Win32-level bump (more reliable vs taskbar)
-        if sys.platform == "win32" and widget.isVisible():
-            import ctypes
-            from ctypes import wintypes
-
-            user32 = ctypes.WinDLL("user32", use_last_error=True)
-            HWND_TOPMOST = -1
-            SWP_NOMOVE = 0x0002
-            SWP_NOSIZE = 0x0001
-            SWP_NOACTIVATE = 0x0010
-            SWP_SHOWWINDOW = 0x0040
-
-            user32.SetWindowPos(
-                wintypes.HWND(int(widget.winId())),
-                wintypes.HWND(HWND_TOPMOST),
-                0, 0, 0, 0, # x, y, x_width, y_width
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
-            )
 
 
 if __name__ == "__main__":
