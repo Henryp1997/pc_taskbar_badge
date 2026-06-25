@@ -8,6 +8,8 @@ import sys
 import os
 import yaml
 from pathlib import Path
+import ctypes
+from ctypes import wintypes
 from PySide6.QtCore import Qt, QTimer, QPoint
 from PySide6.QtGui import QPainter, QFont, QColor, QGuiApplication, QPainterPath
 from PySide6.QtWidgets import QApplication, QWidget, QMenu
@@ -83,23 +85,38 @@ class PCBadge(QWidget):
 
 
     def set_widget_top_most(self, widget):
+        """
+        Leverage the Windows API's SetWindowPos method to force
+        this application to be placed on top of the taskbar
+        --> BOOL SetWindowPos(
+                HWND hWnd,
+                HWND hWndInsertAfter,
+                int X,
+                int Y,
+                int cx,
+                int cy,
+                UINT uFlags
+            );
+        """
         # Win32-level bump (more reliable vs taskbar)
-        if sys.platform == "win32" and widget.isVisible():
-            import ctypes
-            from ctypes import wintypes
-
+        if sys.platform == "win32" and widget.isVisible(): # Only Windows supported for now
             user32 = ctypes.WinDLL("user32", use_last_error=True)
-            HWND_TOPMOST = -1
-            SWP_NOMOVE = 0x0002
-            SWP_NOSIZE = 0x0001
-            SWP_NOACTIVATE = 0x0010
-            SWP_SHOWWINDOW = 0x0040
+            HWND_TOPMOST = -1       # -1 forces windows to place this window in the topmost Z-order
+            SWP_NOMOVE = 0x0002     # Keep x-y position fixed when painting
+            SWP_NOSIZE = 0x0001     # Keep size fixed when painting
+            SWP_NOACTIVATE = 0x0010 # Don't steal focus
+            SWP_SHOWWINDOW = 0x0040 # Ensure the window is visible after SetWindowPos
 
             user32.SetWindowPos(
-                wintypes.HWND(int(widget.winId())),
-                wintypes.HWND(HWND_TOPMOST),
-                0, 0, 0, 0, # x, y, x_width, y_width
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+                wintypes.HWND(int(widget.winId())), # This window's window handle
+                wintypes.HWND(HWND_TOPMOST), # Make this window permanently TOPMOST
+                0, 0, 0, 0, # x, y, x_width, y_width (all ignored because of below flags)
+
+                # Combine all flags together into 'uFlags'
+                SWP_NOMOVE |
+                SWP_NOSIZE |
+                SWP_NOACTIVATE |
+                SWP_SHOWWINDOW
             )
 
 
