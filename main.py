@@ -15,6 +15,7 @@ from PySide6.QtGui import QPainter, QFont, QColor, QGuiApplication, QPainterPath
 from PySide6.QtWidgets import QApplication, QWidget, QMenu
 from get_taskbar_pos import get_taskbar_position
 
+
 class PCBadge(QWidget):
     def __init__(
         self,
@@ -34,12 +35,11 @@ class PCBadge(QWidget):
         self.border_radius = border_radius
         
         screen = QGuiApplication.primaryScreen()
-        available = screen.availableGeometry()
+        avail_geo = screen.availableGeometry()
         window = screen.geometry()
-        taskbar_height = window.height() - available.height()
-        self.resize(150, 40 * (taskbar_height / 48))
+        taskbar_height = window.height() - avail_geo.height()
 
-        self.place_widget_in_available_area(available)
+        self.place_widget_in_available_area(avail_geo, taskbar_height)
         self._drag_off = 0
 
         # Keep the badge from falling behind taskbar/other always-on-top windows
@@ -58,7 +58,7 @@ class PCBadge(QWidget):
         close_action.triggered.connect(QApplication.quit)
 
 
-    def place_widget_in_available_area(self, available):
+    def place_widget_in_available_area(self, avail_geo, taskbar_height):
         """ 
         Force place the badge on the taskbar
         Place the widget on the bottom left if user has taskbar centered
@@ -72,8 +72,11 @@ class PCBadge(QWidget):
                     "This app does not currently work for taskbar " \
                     "positions other than 'bottom', with 'left' icon/start alignment"
                 )
-        x, y = available.left() + 5, available.bottom() + 5
+        padding = round(0.1 * taskbar_height) # 10% of taskbar size as padding
+        x = avail_geo.left() + padding
+        y = avail_geo.bottom() + padding
         self.move(x, y)
+        self.resize(150, taskbar_height - 2 * padding) # Resize to fit perfectly in taskbar
         self.badge_pos = (x, y)
 
 
