@@ -2,4 +2,4 @@ text: "hello, world!"
 bg_colour: "#0099FF"
 fg_colour: "#FFFFFF"
 border_radius: 8
-debug: true
+debug: false
